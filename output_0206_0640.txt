@@ -1,6 +1,0 @@
-LAUNCHER2 START
-Traceback (most recent call last):
-  File "C:\_workingDir\_SF\test flexion\launcher2.py", line 25, in <module>
-    exec(open(r'C:\_workingDir\_SF\test flexion\AC2_pure_flexion.py').read(), {'__name__': '__main__'})
-  File "<string>", line 1351
-SyntaxError: name 'hf_2d_grid_fixed' is used prior to global declaration

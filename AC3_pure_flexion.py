@@ -1901,6 +1901,9 @@ if __name__ == '__main__':
             xt_eff_arr = np.array(xt_eff)
             ax.scatter(xt_eff_arr[:, 0], xt_eff_arr[:, 1], c='red', s=60, zorder=6,
                        marker='^', label=f'EFF ({len(xt_eff)} pts)')
+            for i, pt in enumerate(xt_eff_arr):
+                ax.annotate(str(i + 1), (pt[0], pt[1]), textcoords='offset points',
+                            xytext=(0, 8), ha='center', fontsize=8, color='red', zorder=7)
 
         ax.scatter(0, 0, c='orange', s=100, zorder=6, marker='P', label='[0, 0]')
 

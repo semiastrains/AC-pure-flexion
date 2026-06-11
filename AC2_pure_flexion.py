@@ -63,9 +63,9 @@ if __name__ == '__main__':
     # --------------------------------------------------------------------------- #
     # --------------------------------------------------------------------------- #
     # DEFINITION DU MODELE                                                        #
-    modele = 'GEPCK'
-    do_EFF = True
-    n0 = 5
+    modele = 'HF'
+    do_EFF = False
+    n0 = 3
     params_names = ['fc','fy']
     n_var = len(params_names)
 
@@ -107,6 +107,7 @@ if __name__ == '__main__':
     # --------------------------------------------------------------------------- #
     # PARAMETRES IS                                                               #
     do_IS   = True
+    do_IS   = do_IS and modele != 'HF'                       # IS impraticable en HF
     n_IS    = 10000                                       # taille échantillon IS
     cov_IS  = 0.05                                             # critère d'arrêt COV
 
