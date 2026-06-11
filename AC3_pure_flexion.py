@@ -92,7 +92,7 @@ if __name__ == '__main__':
     do_warmstart = False #warmstart : si FORM ne converge pas, on repart du best pt
 
     tol_FORM = 1.0                 # précision acceptée par FORM pour l'état limite
-    tol_all_modes = 2.0                           #distance DBSCAN entre deux modes
+    tol_all_modes = 0.9                            #distance DBSCAN entre deux modes
     tol_warmstart = 0.2 # fixe la nécessité de faire le warm_start si do_warm_start
 
     # --------------------------------------------------------------------------- #
@@ -123,8 +123,8 @@ if __name__ == '__main__':
     tol_BB       = 0.01         # critere BB : |beta_IS_sup - beta_IS_inf| / beta_IS
     tol_BS       = 0.005        # critere BS : |beta_IS - beta_IS_prec| / beta_IS
     EFF_criteria = 'both'       # critere d'arret EFF : 'BB' | 'BS' | 'both'
-    u1_eff_min, u1_eff_max = -10.0, 10.0
-    u2_eff_min, u2_eff_max = -10.0, 10.0
+    u1_eff_min, u1_eff_max = -7.5, 7.5
+    u2_eff_min, u2_eff_max = -7.5, 7.5
     n_max_EFF = 40
     print_EFF_progres = True                  # True = prints debug EFF a chaque iter
 
@@ -132,10 +132,10 @@ if __name__ == '__main__':
     # PARAMETRES ET OPTIONS DE PRINT                                              #
     
     # Paramètres de print ---
-    u1_max=10.0
-    u2_max=10.0
-    u1_min = -10.0
-    u2_min=-10.0
+    u1_max = 7.5
+    u2_max = 7.5
+    u1_min = -7.5
+    u2_min = -7.5
     n_grid = 300
     n_grid_hf = 7
 
@@ -297,8 +297,9 @@ if __name__ == '__main__':
         traj_runs_fixed = None
     
 
-    # --- Label PCE GEPCK (mis a jour par init_g_ot, lu par print_planche_EFF) ---
+    # --- Label PCE GEPCK et LOO (mis a jour par init_g_ot, lus par print_planche_EFF) ---
     _gepck_pce_label = ""
+    _gepck_loo       = None
 
     # --- Historiques EFF (mis a jour par run_EFF et init_g_ot, lus par print_EFF_graphs) ---
     _eff_history_EFF   = []   # EFF(u_opt) avant ajout de chaque point (incl. initial)
@@ -754,7 +755,7 @@ if __name__ == '__main__':
         ax.axvline(0, color='gray', lw=0.4)
         ax.set_xlabel(r'$u_1$  (espace standard, $f_c$)')
         ax.set_ylabel(r'$u_2$  (espace standard, $f_y$)')
-        ax.set_title("Surface d'état-limite — flexion pivot B")
+        ax.set_title("Surface d'etat-limite - flexion pivot B")
         ax.legend(loc='best', fontsize=9)
         ax.grid(True, alpha=0.3)
         ax.set_xlim(u1_min, u1_max)
@@ -1146,8 +1147,9 @@ if __name__ == '__main__':
                 _parts = [f"H{int(_mi[k])}(u{k+1})" for k in range(len(_mi)) if int(_mi[k]) > 0]
                 _terms.append(f"{_coef:+.4f}*{'*'.join(_parts) if _parts else '1'}")
             print(f"  GEPCK PCE termes : {' '.join(_terms)}", flush=True)
-            global _gepck_pce_label, _eff_history_theta
+            global _gepck_pce_label, _gepck_loo, _eff_history_theta
             _gepck_pce_label = ' '.join(_terms)
+            _gepck_loo       = _fm['Error'][0]['LOO']
             _eff_history_theta.append(list(_fm['Kriging'][0]['theta']))
             gepck_impl = GEPCKFunction(_fm)
             g_ot       = ot.Function(gepck_impl)
@@ -1625,9 +1627,11 @@ if __name__ == '__main__':
                 print(f"hf_2d_grid_fixed = {hf_2d_grid_fixed!r}", flush=True)
 
         # --- Figure ---
-        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6))
-        _pce_line = f'\n{_gepck_pce_label}' if _gepck_pce_label else ''
-        fig.suptitle(f'{modele} — N={len(xt)} pts DOE  ({n_added} ajoutes par EFF){_pce_line}', fontsize=10)
+        fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(21, 6))
+        _pce_line   = f'\n{_gepck_pce_label}' if _gepck_pce_label else ''
+        _theta_str  = '  theta=[' + ', '.join(f'{v:.3f}' for v in _eff_history_theta[-1]) + ']' if _eff_history_theta else ''
+        _loo_str    = f'  LOO={_gepck_loo:.3e}' if _gepck_loo is not None else ''
+        fig.suptitle(f'{modele} - N={len(xt)} pts DOE  ({n_added} ajoutes par EFF){_theta_str}{_loo_str}{_pce_line}', fontsize=10)
 
         def _decorate(ax):
             if Z_g is not None:
@@ -1661,6 +1665,14 @@ if __name__ == '__main__':
         plt.colorbar(cf2, ax=ax2, label='sigma (ecart-type surrogate)')
         ax2.set_title('Ecart-type surrogate (sigma)')
         _decorate(ax2)
+
+        # --- Ax3 : g surrogate (isocouleurs RdYlGn) ---
+        if Z_g is not None:
+            cf3 = ax3.contourf(U1, U2, Z_g, levels=20, cmap='RdYlGn', alpha=0.6)
+            plt.colorbar(cf3, ax=ax3, label='g surrogate')
+            ax3.contour(U1, U2, Z_g, levels=[0], colors='blue', linewidths=2)
+        ax3.set_title('g surrogate - etat limite')
+        _decorate(ax3)
 
         plt.tight_layout()
         fname = f'EFF_{n_added}points_{timestamp}.png'
@@ -2049,7 +2061,7 @@ if __name__ == '__main__':
         ax.set_xlabel('u1 (fc)')
         ax.set_ylabel('u2 (fy)')
         ax.set_zlabel('g_HF')
-        ax.set_title(f'Surface g_HF — {n_grid_hf}x{n_grid_hf} pts HF')
+        ax.set_title(f'Surface g_HF - {n_grid_hf}x{n_grid_hf} pts HF')
         ax.legend()
         plt.tight_layout()
         plt.show()
